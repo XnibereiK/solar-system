@@ -1,0 +1,38 @@
+name: kierebinski-solar
+
+networks:
+  edge:
+    external: true
+    name: edge
+
+services:
+  app:
+    build: .
+    container_name: solar-app
+    restart: unless-stopped
+    environment:
+      - APP_DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data
+    networks:
+      - edge
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    labels:
+      - "traefik.enable=true"
+      # Tunnel mode (HTTPS at Cloudflare edge, HTTP to Traefik)
+      - "traefik.http.routers.solar.rule=Host(`solar.kierebinski.solutions`)"
+      - "traefik.http.routers.solar.entrypoints=web"
+      - "traefik.http.routers.solar.middlewares=rate-limit@file,secure-headers@file,gzip@file"
+      - "traefik.http.services.solar.loadbalancer.server.port=8501"
+      # Optional Direct mode (HTTPS terminated by Traefik on server IP)
+      - "traefik.http.routers.solar-https.rule=Host(`solar.kierebinski.solutions`)"
+      - "traefik.http.routers.solar-https.entrypoints=websecure"
+      - "traefik.http.routers.solar-https.tls.certresolver=le"
+      - "traefik.http.routers.solar-https.middlewares=rate-limit@file,secure-headers@file,gzip@file"

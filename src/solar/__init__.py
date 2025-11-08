@@ -1,0 +1,1 @@
+"""Core solar logic package."""
